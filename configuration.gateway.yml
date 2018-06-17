@@ -1,0 +1,10 @@
+Monitoring:
+  Addr: "0.0.0.0:8126"
+  Prefix: "rider/"
+Logging:
+  Level: info
+  Format: json
+
+
+Server:
+  Port: 8080
