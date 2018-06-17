@@ -1,0 +1,15 @@
+version: '3.6'
+services:
+
+
+  grafana_graphite:
+    image: kamon/grafana_graphite
+    container_name: monitoring
+    ports:
+      - '9000:80'
+      - '9002:8125/udp'
+    volumes:
+      - ./data/whisper:/opt/graphite/storage/whisper
+      - ./data/grafana:/opt/grafana/data
+      - ./data/graphite:/opt/graphite/storage/log
+      - ./data/supervisor:/var/log/supervisor
