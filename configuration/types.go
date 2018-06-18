@@ -32,6 +32,7 @@ type GatewayConfiguration struct {
 	Server     Server
 	Logging    Logging
 	Monitoring Monitoring
+	Limiter    Limiter
 
 	// BikeURL is the base url to bike service.
 	BikeURL string
@@ -80,4 +81,10 @@ const (
 type Monitoring struct {
 	Addr   string
 	Prefix string
+}
+
+// Limiter for rate limit features.
+type Limiter struct {
+	Limit float64
+	Burst int
 }
