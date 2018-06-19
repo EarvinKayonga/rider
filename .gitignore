@@ -1,5 +1,7 @@
 data/*
 !data/.gitkeep
+*.DS_Store
+bin/
+
 
 vendor
-bin/
