@@ -8,3 +8,9 @@ Logging:
 
 Server:
   Port: 8080
+
+Messaging:
+  Emission:
+    Address: 0.0.0.0:4150
+    MaxInFlight: 25
+    Topic: rider.trips

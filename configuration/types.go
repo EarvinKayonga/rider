@@ -5,17 +5,17 @@ import (
 	"strconv"
 )
 
-var (
-	// ConfigType holds the supported type.
-	ConfigType = "yaml"
-)
-
 // TripConfiguration specifies general configurations
 // for the trip service.
 type TripConfiguration struct {
 	Server     Server
 	Logging    Logging
 	Monitoring Monitoring
+
+	Database  Database
+	Messaging struct {
+		Consumption Consumption
+	}
 }
 
 // BikeConfiguration specifies general configurations
@@ -24,6 +24,11 @@ type BikeConfiguration struct {
 	Server     Server
 	Logging    Logging
 	Monitoring Monitoring
+
+	Database  Database
+	Messaging struct {
+		Consumption Consumption
+	}
 }
 
 // GatewayConfiguration specifies general configurations
@@ -33,6 +38,10 @@ type GatewayConfiguration struct {
 	Logging    Logging
 	Monitoring Monitoring
 	Limiter    Limiter
+
+	Messaging struct {
+		Emission Emission
+	}
 
 	// BikeURL is the base url to bike service.
 	BikeURL string
@@ -87,4 +96,27 @@ type Monitoring struct {
 type Limiter struct {
 	Limit float64
 	Burst int
+}
+
+// Database configuration.
+type Database struct {
+	Host     string
+	Port     string
+	User     string
+	Password string
+	Name     string
+}
+
+// Emission for messaging.
+type Emission struct {
+	Address     string
+	MaxInFlight int
+	Topic       string
+}
+
+// Consumption for messaging.
+type Consumption struct {
+	Address string
+
+	Topic string
 }

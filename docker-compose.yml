@@ -13,3 +13,101 @@ services:
       - ./data/grafana:/opt/grafana/data
       - ./data/graphite:/opt/graphite/storage/log
       - ./data/supervisor:/var/log/supervisor
+
+
+
+  nsqlookupd:
+    image: nsqio/nsq
+    command: /nsqlookupd
+    ports:
+      - "4160"
+      - "4161:4161"
+  nsqd:
+    image: nsqio/nsq
+    command: /nsqd --lookupd-tcp-address=nsqlookupd:4160
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4150:4150"
+      - "4151:4151"
+  nsqadmin:
+    image: nsqio/nsq
+    command: /nsqadmin --lookupd-http-address=nsqlookupd:4161
+    depends_on:
+      - nsqlookupd
+    ports:
+      - "4171:4171"
+
+
+
+  bike_database: #postgresql://bikeuser:ilovebikes@bike_database:5434/bikedb
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ilovebikes
+      POSTGRES_USER: bikeuser
+      POSTGRES_DB: bikedb
+
+    volumes:
+      - ./data/bike:/var/lib/postgresql/data
+      - ./storage/schemas/bike.sql:/docker-entrypoint-initdb.d/1-schema.sql
+
+
+
+  trip_database: #postgresql://tripuser:ilovetrips@trip_database:5433/tripdb
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ilovetrips
+      POSTGRES_USER: tripuser
+      POSTGRES_DB: tripdb
+    volumes:
+      - ./data/trip:/var/lib/postgresql/data
+      - ./storage/schemas/trip.sql:/docker-entrypoint-initdb.d/1-schema.sql
+
+
+  trip:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: trip
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://tripuser:ilovetrips@trip_database:5432/tripdb
+      LOOKUP: nsqlookupd:4161
+    depends_on:
+      - trip_database
+      - nsqlookupd
+
+  bike:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: bike
+    restart: always
+    environment:
+      DATABASE_URL: postgresql://bikeuser:ilovebikes@bike_database:5432/bikedb
+      LOOKUP: nsqlookupd:4161
+    depends_on:
+      - bike_database
+      - nsqlookupd
+
+  gateway:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: gateway
+    restart: always
+    ports:
+      - 8080:8080
+    environment:
+      NSQ_SOCKET: nsqd:4150
+      TRIP_URL: http://trip:8082
+      BIKE_URL: http://bike:8081
+    depends_on:
+      - grafana_graphite
+      - nsqlookupd
+      - trip
+      - bike
+      - nsqadmin
+      - nsqd
