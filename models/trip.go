@@ -11,5 +11,5 @@ type Trip struct {
 	BikeID    string     `json:"bike_id"`
 	Locations []Location `json:"locations"`
 	StartedAt time.Time  `json:"started_at"`
-	EndedAt   time.Time  `json:"ended_at"`
+	EndedAt   *time.Time `json:"ended_at"`
 }
