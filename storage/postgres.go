@@ -241,7 +241,7 @@ func (e *pgStore) CreateTrip(ctx context.Context, bikeID string, lat, lng float6
 		}()
 	}
 
-	trip, err := toTrip(stmt.QueryRow(bikeID, entropy.FromContext(ctx).NewID(), 1))
+	trip, err := toTrip(stmt.QueryRow(bikeID, entropy.NewIDGenerator().NewID(), 1))
 	if err != nil {
 		defer func() {
 			thr := tx.Rollback()
@@ -253,11 +253,6 @@ func (e *pgStore) CreateTrip(ctx context.Context, bikeID string, lat, lng float6
 		return nil, errors.Wrap(err,
 			"an error occured while writing trip in database")
 	}
-
-	bike, err := toBike(
-		e.
-			database.
-			QueryRow(lockBikeByPublicID, bikeID))
 
 	if err != nil {
 		defer func() {
@@ -271,10 +266,33 @@ func (e *pgStore) CreateTrip(ctx context.Context, bikeID string, lat, lng float6
 			"an error occured while writing locking bike in database")
 	}
 
-	location, err := toLocation(
-		e.
-			database.
-			QueryRow(addLocationToTrip, lat, lng, trip.PublicID))
+	stmt, err = tx.Prepare(addLocationToTrip)
+	if err != nil {
+		return nil, errors.Wrap(err,
+			"an error occured while preparing location transaction for trip creation")
+	}
+
+	if stmt != nil {
+		defer func() {
+			thr := stmt.Close()
+			if thr != nil {
+				e.logger.WithError(thr).Warn("error while closing prepared statement")
+			}
+		}()
+	}
+
+	location, err := toLocation(stmt.QueryRow(lat, lng, trip.PublicID))
+	if err != nil {
+		defer func() {
+			thr := tx.Rollback()
+			if thr != nil {
+				e.logger.WithError(thr).Warn("error while rollbacking transaction")
+			}
+		}()
+
+		return nil, errors.Wrap(err,
+			"an error occured while writing trip in database")
+	}
 
 	if err != nil {
 		defer func() {
@@ -285,7 +303,7 @@ func (e *pgStore) CreateTrip(ctx context.Context, bikeID string, lat, lng float6
 		}()
 
 		return nil, errors.Wrap(err,
-			"an error occured while writing location in database")
+			"an error occured while writing locking bike in database")
 	}
 
 	err = tx.Commit()
@@ -310,7 +328,7 @@ func (e *pgStore) CreateTrip(ctx context.Context, bikeID string, lat, lng float6
 
 		ID:        trip.PublicID,
 		Status:    trip.Status,
-		BikeID:    bike.ID,
+		BikeID:    trip.BikeID,
 		StartedAt: trip.StartedAt,
 		EndedAt:   unwrapNullTime(trip.EndedAt),
 	}, nil
@@ -351,10 +369,33 @@ func (e *pgStore) EndTrip(ctx context.Context, tripID string, lat, lng float64) 
 			"an error occured while writing trip in database")
 	}
 
-	_, err = toLocation(
-		e.
-			database.
-			QueryRow(addLocationToTrip, lat, lng, trip.PublicID))
+	stmt, err = tx.Prepare(addLocationToTrip)
+	if err != nil {
+		return nil, errors.Wrap(err,
+			"an error occured while preparing transaction for trip ending")
+	}
+
+	if stmt != nil {
+		defer func() {
+			thr := stmt.Close()
+			if thr != nil {
+				e.logger.WithError(thr).Warn("error while closing prepared statement")
+			}
+		}()
+	}
+
+	_, err = toLocation(stmt.QueryRow(lat, lng, trip.PublicID))
+	if err != nil {
+		defer func() {
+			thr := tx.Rollback()
+			if thr != nil {
+				e.logger.WithError(thr).Warn("error while rollbacking transaction")
+			}
+		}()
+
+		return nil, errors.Wrap(err,
+			"an error occured while writing trip in database")
+	}
 
 	if err != nil {
 		defer func() {
@@ -366,23 +407,6 @@ func (e *pgStore) EndTrip(ctx context.Context, tripID string, lat, lng float64) 
 
 		return nil, errors.Wrap(err,
 			"an error occured while writing location in database")
-	}
-
-	bike, err := toBike(
-		e.
-			database.
-			QueryRow(unlockBikeByPublicID, trip.BikeID))
-
-	if err != nil {
-		defer func() {
-			thr := tx.Rollback()
-			if thr != nil {
-				e.logger.WithError(thr).Warn("error while rollbacking transaction")
-			}
-		}()
-
-		return nil, errors.Wrap(err,
-			"an error occured while writing unlocking bike in database")
 	}
 
 	err = tx.Commit()
@@ -411,14 +435,14 @@ func (e *pgStore) EndTrip(ctx context.Context, tripID string, lat, lng float64) 
 
 		ID:        trip.PublicID,
 		Status:    trip.Status,
-		BikeID:    bike.ID,
+		BikeID:    trip.BikeID,
 		StartedAt: trip.StartedAt,
 		EndedAt:   unwrapNullTime(trip.EndedAt),
 	}, nil
 }
 
 func (e *pgStore) GetLocationsForTrip(ctx context.Context, tripID string) ([]models.Location, error) {
-	rows, err := e.database.Query(listTrip, tripID)
+	rows, err := e.database.Query(listLocationForTrip, tripID)
 	if err != nil {
 		return nil, errors.Wrap(err,
 			"an error occured while listing trips from the database")
@@ -453,7 +477,7 @@ func (e *pgStore) GetLocationsForTrip(ctx context.Context, tripID string) ([]mod
 	count := len(locations)
 
 	correctLocations := make([]models.Location, count)
-	e.logger.Infof("fetched %s location points", count)
+	e.logger.Infof("fetched %d location points", count)
 
 	sort.SliceStable(locations, func(i, j int) bool {
 		return locations[i].CreatedAt.Unix() < locations[j].CreatedAt.Unix()

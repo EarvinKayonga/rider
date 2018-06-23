@@ -17,7 +17,6 @@ CREATE TABLE locations (
     longitude real NOT NULL,
     trip_id character varying(26) NOT NULL,
     created_at date NOT NULL DEFAULT CURRENT_DATE,
-    CONSTRAINT locations_pkey PRIMARY KEY (id) ,
-    FOREIGN KEY (trip_id) REFERENCES trips(public_id)
+    CONSTRAINT locations_pkey PRIMARY KEY (id)
 )
 With(OIDS=FALSE);

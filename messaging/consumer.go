@@ -2,6 +2,8 @@ package messaging
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 
 	"github.com/pkg/errors"
 	bus "github.com/rafaeljesus/nsq-event-bus"
@@ -31,7 +33,7 @@ func (e consumer) Run(ctx context.Context) error {
 		err := bus.On(bus.ListenerConfig{
 			Lookup:      []string{e.Address},
 			Topic:       e.Topic,
-			Channel:     "consumer1",
+			Channel:     fmt.Sprintf("consumer%d", rand.Intn(100)),
 			HandlerFunc: e.HandlerFunc,
 		})
 

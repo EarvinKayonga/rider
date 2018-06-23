@@ -24,11 +24,11 @@ var (
 	createBike         = `INSERT INTO bikes (public_id, latitude, longitude, status) VALUES ($1, $2, $3, $4) 
 							RETURNING id, public_id, latitude, longitude, status;`
 
-	unlockBikeByPublicID = `INSERT INTO bikes (status) VALUES (1) 
+	unlockBikeByPublicID = `UPDATE bikes SET status = 1 
 							WHERE public_id = $1
 							RETURNING id, public_id, latitude, longitude, status;`
 
-	lockBikeByPublicID = `INSERT INTO bikes (status) VALUES (0) 
+	lockBikeByPublicID = `UPDATE bikes SET status = 0
 							WHERE public_id = $1
 							RETURNING id, public_id, latitude, longitude, status;`
 )
@@ -61,6 +61,8 @@ func toBike(row scannable) (*models.Bike, error) {
 var (
 	addLocationToTrip = `INSERT INTO locations (latitude, longitude, trip_id) VALUES ($1, $2, $3) 
 							RETURNING id, latitude, longitude, trip_id, created_at;`
+
+	listLocationForTrip = `SELECT id, latitude, longitude, trip_id, created_at FROM locations WHERE trip_id=$1;`
 )
 
 // toLocation centralizes the parsing of a sql Row to a Location.
@@ -91,10 +93,10 @@ func toLocation(row scannable) (*Location, error) {
 
 // Trip queries
 var (
-	createTrip = `INSERT INTO trips (bike_id, public_id, status) VALUES($1, $2, $3)
+	createTrip = `INSERT INTO trips (bike_id, public_id , status) VALUES($1, $2, $3)
 					RETURNING id, started_at, ended_at, public_id, bike_id, status;`
 
-	endTrip = `INSERT INTO trips (public_id, status) VALUES($1, 0)
+	endTrip = `UPDATE trips SET status = 0,  public_id = $1
 					RETURNING id, started_at, ended_at, public_id, bike_id, status;`
 
 	listTrip = `SELECT id, started_at, ended_at, public_id, bike_id, status FROM trips WHERE public_id=$1;`

@@ -10,6 +10,7 @@ import (
 	"github.com/EarvinKayonga/rider/configuration"
 	"github.com/EarvinKayonga/rider/httpx"
 	"github.com/EarvinKayonga/rider/models"
+	"github.com/EarvinKayonga/rider/storage"
 )
 
 const (
@@ -55,8 +56,13 @@ func DeserializeBikesFromResponse(resp *http.Response) ([]models.Bike, error) {
 		return nil, ErrEmptyBody
 	}
 
+	err := readStatus(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	bikes := []models.Bike{}
-	err := json.NewDecoder(resp.Body).Decode(&bikes)
+	err = json.NewDecoder(resp.Body).Decode(&bikes)
 	if err != nil {
 		return nil, errors.Wrap(err, "an error occured while decoding message from bike service")
 	}
@@ -77,8 +83,13 @@ func DeserializeBikeFromResponse(resp *http.Response) (*models.Bike, error) {
 		return nil, ErrEmptyBody
 	}
 
+	err := readStatus(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	bike := models.Bike{}
-	err := json.NewDecoder(resp.Body).Decode(&bike)
+	err = json.NewDecoder(resp.Body).Decode(&bike)
 	if err != nil {
 		return nil, errors.Wrap(err, "an error occured while decoding message from bike service")
 	}
@@ -99,8 +110,13 @@ func DeserializeTripFromResponse(resp *http.Response) (*models.Trip, error) {
 		return nil, ErrEmptyBody
 	}
 
+	err := readStatus(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	trip := models.Trip{}
-	err := json.NewDecoder(resp.Body).Decode(&trip)
+	err = json.NewDecoder(resp.Body).Decode(&trip)
 	if err != nil {
 		return nil, errors.Wrap(err, "an error occured while decoding message from trip service")
 	}
@@ -115,7 +131,7 @@ func StartTripFromGateway(ctx context.Context, conf configuration.GatewayConfigu
 		return nil, errors.Wrap(err, "an error occured while create start trip payload")
 	}
 
-	resp, err := httpx.Client().Post(conf.BikeURL+"/trip/end", jsonContentType, body)
+	resp, err := httpx.Client().Post(conf.TripURL+"/trip/start", jsonContentType, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "an error occured while connecting trip service")
 	}
@@ -130,10 +146,15 @@ func StartTripFromGateway(ctx context.Context, conf configuration.GatewayConfigu
 		return nil, ErrEmptyBody
 	}
 
+	err = readStatus(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	trip := models.Trip{}
 	err = json.NewDecoder(resp.Body).Decode(&trip)
 	if err != nil {
-		return nil, errors.Wrap(err, "an error occured while decoding message from bike service")
+		return nil, errors.Wrap(err, "an error occured while decoding message from trip service")
 	}
 
 	return &trip, nil
@@ -146,7 +167,7 @@ func EndTripFromGateway(ctx context.Context, conf configuration.GatewayConfigura
 		return nil, errors.Wrap(err, "an error occured while create end trip payload")
 	}
 
-	resp, err := httpx.Client().Post(conf.BikeURL+"/trip/end", jsonContentType, body)
+	resp, err := httpx.Client().Post(conf.TripURL+"/trip/end", jsonContentType, body)
 	if err != nil {
 		return nil, errors.Wrap(err, "an error occured while connecting trip service")
 	}
@@ -161,6 +182,11 @@ func EndTripFromGateway(ctx context.Context, conf configuration.GatewayConfigura
 		return nil, ErrEmptyBody
 	}
 
+	err = readStatus(resp.StatusCode)
+	if err != nil {
+		return nil, err
+	}
+
 	trip := models.Trip{}
 	err = json.NewDecoder(resp.Body).Decode(&trip)
 	if err != nil {
@@ -168,4 +194,13 @@ func EndTripFromGateway(ctx context.Context, conf configuration.GatewayConfigura
 	}
 
 	return &trip, nil
+}
+
+func readStatus(statusCode int) error {
+	switch statusCode {
+	case http.StatusNotFound:
+		return storage.ErrBikeNotFound
+	default:
+		return nil
+	}
 }

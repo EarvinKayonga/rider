@@ -6,6 +6,7 @@ import (
 
 // Domain based errors.
 var (
-	ErrBikeInUse = errors.New("bike already in use")
-	ErrEmptyBody = errors.New("empty body")
+	ErrBikeInUse  = errors.New("bike already in use")
+	ErrEmptyBody  = errors.New("empty body")
+	ErrUnexpected = errors.New("unexpected error")
 )
