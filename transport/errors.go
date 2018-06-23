@@ -34,7 +34,7 @@ func Erroring(_ context.Context, w http.ResponseWriter, err error, logger loggin
 
 	default:
 		w.WriteHeader(http.StatusInternalServerError)
-		_, err := fmt.Fprint(w, "An expected error occured :(")
+		_, err := fmt.Fprint(w, "an expected error occured :(")
 		if err != nil {
 			logger.WithError(err).Info("while json encoding a error")
 		}

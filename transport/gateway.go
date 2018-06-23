@@ -209,7 +209,7 @@ func GatewayStartTrip(
 			return
 		}
 
-		logger.Info("bike successfully started")
+		logger.Info("trip successfully started")
 	}
 }
 

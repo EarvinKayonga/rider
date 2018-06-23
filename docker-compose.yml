@@ -91,6 +91,8 @@ services:
     depends_on:
       - bike_database
       - nsqlookupd
+    ports:
+      - 8082:8082
 
   gateway:
     build:
@@ -105,9 +107,9 @@ services:
       TRIP_URL: http://trip:8082
       BIKE_URL: http://bike:8081
     depends_on:
-      - grafana_graphite
-      - nsqlookupd
       - trip
       - bike
+      - grafana_graphite
+      - nsqlookupd
       - nsqadmin
       - nsqd
