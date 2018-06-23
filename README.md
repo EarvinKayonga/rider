@@ -3,8 +3,11 @@
 Simple Microservice backend application
 
 Rider is composed for 3 microservices:
+
     - The Bike Service which handles a fleet of bikes,
+    
     - The Trip Service abstracts the Trip Workflow,
+    
     - The API Gateway (the only one that is been exposed)
 
 ## How to install
