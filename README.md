@@ -13,7 +13,9 @@ Rider is composed for 3 microservices:
 ## How to install
 
 `git clone git@github.com/EarvinKayonga/rider rider` to checkout this baby
+
 `cd rider`
+
 `docker-compose up --build -d` to run the gateway on port 8080
 
 ## How to use
