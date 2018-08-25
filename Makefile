@@ -1,4 +1,4 @@
-commit = $(shell git log --pretty=format:'%h' -n 1)
+commit = $(shell git log --pretty=format:'%H' -n 1)
 now = $(shell date "+%Y-%m-%d %T UTC%z")
 compiler = $(shell go version)
 branch = $(shell git rev-parse --abbrev-ref HEAD)
